@@ -1,28 +1,27 @@
 import pytest
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+from pages.main_page import MainPage
 from config.config import Config
 
 
 @pytest.fixture(scope="function")
-def driver():
-    # Настройка ChromeOptions
-    chrome_options = Options()
-    chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--disable-extensions")
-
-    # Инициализация драйвера
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=chrome_options
-    )
-
-    # Установка неявного ожидания
-    driver.implicitly_wait(Config.DEFAULT_TIMEOUT)
-
+def browser():
+    options = webdriver.ChromeOptions()
+    options.add_argument("--start-maximized")
+    driver = webdriver.Chrome(options=options)
     yield driver
-
-    # Закрытие браузера после теста
     driver.quit()
+
+
+@pytest.fixture
+def main_page(browser):
+    page = MainPage(browser)
+    page.open()
+    page.close_popups()
+    return page
+
+
+# Добавляем фикстуру driver для совместимости со старыми тестами
+@pytest.fixture
+def driver(browser):
+    return browser

@@ -1,6 +1,9 @@
 # Автотесты для сайта "Читай город"
 
 Этот проект содержит автоматизированные тесты для веб-сайта "Читай город", включая UI и API тесты.
+Работа выполнена на основе курсовой работы по ручному тестированию :
+https://olegdryga.yonote.ru/doc/otchet-o-testirovanii-sajta-i-web-prilozheniya-chitaj-gorod-vypolnil-student-gr-qa-892-dryga-or-dSiBS2iBE7
+
 
 ## Структура проекта
 project/

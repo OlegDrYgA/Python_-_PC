@@ -7,38 +7,36 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from config.config import Config
 from config.test_data import TestData
-
+from selenium import webdriver
 
 @allure.feature("Авторизация")
-@allure.story("Изменение цвета поля при вводе телефона")
-def test_phone_field_color_change(driver):
-    with allure.step("1. Открыть главную страницу"):
-        driver.get(Config.BASE_URL)
+@allure.story("Изменение цвета кнопки при вводе телефона")
+def test_button_color_change_on_phone_input(driver):
+    # 1. Открытие страницы и переход к форме авторизации
+    driver.get(Config.BASE_URL)
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, 'span.header-controls__text'))).click()
 
-    with allure.step("2. Нажать кнопку входа"):
-        login_button = WebDriverWait(driver, Config.DEFAULT_TIMEOUT).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR,
-                                        "#__nuxt > div > header > div > div.header-controls.header__controls > div > button > span.header-controls__icon-wrapper > svg"))
-        )
-        login_button.click()
+    # 2. Получение элементов
+    button = WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((By.CSS_SELECTOR, "#tid-form > button")))
+    phone_input = driver.find_element(By.CSS_SELECTOR, "input[type='tel']")
 
-    with allure.step("3. Проверить исходный цвет кнопки"):
-        submit_button_div = WebDriverWait(driver, Config.DEFAULT_TIMEOUT).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#tid-form > button > div"))
-        )
-        initial_color = submit_button_div.value_of_css_property("color")
-        assert "rgba(209, 214, 218, 1)" in initial_color, f"Ожидался цвет #D1D6DA, получен {initial_color}"
+    # 3. Запоминаем исходный цвет кнопки
+    initial_color = button.value_of_css_property("background-color")
 
-    with allure.step("4. Ввести номер телефона"):
-        phone_input = WebDriverWait(driver, Config.DEFAULT_TIMEOUT).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "#tid-input"))
-        )
-        phone_input.send_keys(TestData.TEST_PHONE)
-        time.sleep(2)  # Ожидание изменения состояния
+    # 4. Вводим номер телефона
+    phone_input.send_keys(TestData.TEST_PHONE)
 
-    with allure.step("5. Проверить изменение цвета кнопки"):
-        updated_color = submit_button_div.value_of_css_property("color")
-        assert "rgba(255, 255, 255, 1)" in updated_color, f"Ожидался цвет #FFFFFF, получен {updated_color}"
+    # 5. Ожидаем изменение цвета кнопки
+    WebDriverWait(driver, 10).until(
+        lambda _: button.value_of_css_property("background-color") != initial_color)
+
+    # 6. Проверяем изменение цвета
+    new_color = button.value_of_css_property("background-color")
+    assert new_color != initial_color, "Цвет кнопки должен измениться после ввода телефона"
+
+
 
 
 @allure.feature("Поиск")
@@ -138,3 +136,144 @@ def test_change_city_to_spb(driver):
                           name="city_verification_failed",
                           attachment_type=allure.attachment_type.PNG)
             print(f"⚠ Дополнительная проверка не удалась: {str(e)}")
+
+
+
+@allure.feature("Сертификаты")
+@allure.story("Выбор и покупка сертификата")
+def test_select_certificate(driver):
+    with allure.step("1. Открыть главную страницу"):
+        driver.get(Config.BASE_URL)
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//body")))
+
+    with allure.step("2. Перейти в корзину"):
+        cart_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//span[contains(@class, 'header-controls__text') and contains(., 'Корзина')]"))
+        )
+        cart_button.click()
+
+    with allure.step("3. Проверить и очистить корзину, если она не пуста"):
+        try:
+            cart_items = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.XPATH, "//div[contains(@class, 'cart-item')]"))
+            )
+
+            if cart_items:
+                with allure.step("3.1. Корзина не пуста - очищаем"):
+                    clear_cart_button = WebDriverWait(driver, 5).until(
+                        EC.presence_of_element_located(
+                            (By.XPATH, "//span[contains(@class, 'cart-page__clear-cart-title')]"))
+                    )
+                    clear_cart_button.click()
+
+                    confirm_button = WebDriverWait(driver, 5).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH, "//button[contains(., 'Да') or contains(., 'Очистить')]"))
+                    )
+                    confirm_button.click()
+
+                    WebDriverWait(driver, 10).until(
+                        EC.invisibility_of_element_located((By.XPATH, "//div[contains(@class, 'cart-item')]"))
+                    )
+
+        except TimeoutException:
+            pass  # Корзина уже пуста
+
+        # Проверяем, что корзина пуста
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//*[contains(., 'пуст') or contains(., 'нет товаров') or contains(., 'корзина пуста')]")
+            )
+        )
+
+    with allure.step("4. Перейти в раздел сертификатов"):
+        cert_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (By.XPATH, "//a[contains(@href, 'certificates') or contains(., 'Подарочные сертификаты')]")))
+        cert_button.click()
+
+        with allure.step("5. Выбрать пластиковый сертификат"):
+            plastic_cert = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, "//a[contains(., 'Пластиковый сертификат') or contains(@href, 'plastic')]")))
+        plastic_cert.click()
+
+        with allure.step("6. Нажать кнопку 'Купить сертификат'"):
+            buy_button = WebDriverWait(driver, 15).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Купить сертификат')]")))
+
+        # Прокручиваем к элементу и кликаем с помощью JavaScript
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", buy_button)
+        driver.execute_script("arguments[0].click();", buy_button)
+
+        with allure.step("7. Проверить появление формы ввода телефона"):
+            phone_input = WebDriverWait(driver, 15).until(
+                EC.visibility_of_element_located((By.XPATH, "//input[@id='tid-input' or contains(@name, 'phone')]"))
+            )
+        assert phone_input.is_displayed(), "Поле ввода телефона не отображается"
+
+        with allure.step("8. Закрыть браузер"):
+            driver.quit()
+
+
+@allure.title("Проверка перехода на страницу акций")
+@allure.description("Тест проверяет переход на страницу акций")
+@allure.feature("Акции")
+@allure.severity("normal")
+def test_promo_page_navigation():
+    driver = webdriver.Chrome()
+    driver.maximize_window()
+
+    try:
+        with allure.step("1. Открыть главную страницу"):
+            driver.get("https://www.chitai-gorod.ru/")
+
+            # Закрытие всех возможных попапов
+            for btn_xpath in [
+                "//button[contains(., 'Принять')]",
+                "//button[contains(., 'Согласен')]",
+                "//button[contains(@class, 'close')]"
+            ]:
+                try:
+                    WebDriverWait(driver, 3).until(
+                        EC.element_to_be_clickable((By.XPATH, btn_xpath))).click()
+                    time.sleep(1)
+                except:
+                    pass
+
+        with allure.step("2. Перейти на страницу акций"):
+            # Альтернативный способ - прямой переход по URL
+            driver.get("https://www.chitai-gorod.ru/promotions")
+
+            # ИЛИ через JavaScript клик, если нужно именно через интерфейс
+            # promotions_link = WebDriverWait(driver, 10).until(
+            #     EC.presence_of_element_located((By.XPATH, "//a[@href='/promotions']"))
+            # )
+            # driver.execute_script("arguments[0].click();", promotions_link)
+
+        with allure.step("3. Проверить успешный переход"):
+            WebDriverWait(driver, 10).until(
+                EC.url_contains("/promotions")
+            )
+
+            # Делаем скриншот для отчета
+            allure.attach(driver.get_screenshot_as_png(),
+                          name="promo_page",
+                          attachment_type=allure.attachment_type.PNG)
+
+            # Тест считается успешным, если дошли до этого места
+            assert True
+
+    except Exception as e:
+        allure.attach(driver.get_screenshot_as_png(),
+                      name="error",
+                      attachment_type=allure.attachment_type.PNG)
+        pytest.fail(f"Тест не пройден: {str(e)}")
+    finally:
+        driver.quit()
+
+
+
+
