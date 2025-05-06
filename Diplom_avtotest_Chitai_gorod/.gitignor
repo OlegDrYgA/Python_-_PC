@@ -10,3 +10,6 @@ allure-report/
 chromedriver
 geckodriver
 *.env
+
+
+

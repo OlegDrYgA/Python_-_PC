@@ -35,3 +35,4 @@ project/
 Запуск Ui тестов pytest pytest Diplom_avtotest_Chitai_gorod/tests/test_ui.py
 Запуск отчетов ALLURE  pytest --alluredir=allure-results
 Просмотр результатов allure serve allure-results
+автотесты Ui
