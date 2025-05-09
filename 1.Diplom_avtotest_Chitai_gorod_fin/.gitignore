@@ -1,0 +1,15 @@
+__pycache__/
+.pytest_cache/
+.vscode/
+*.pyc
+*.swp
+.DS_Store
+*.log
+allure-results/
+allure-report/
+chromedriver
+geckodriver
+*.env
+
+
+
